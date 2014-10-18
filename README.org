@@ -1,0 +1,3 @@
+* useful links
+- [[http://wiki.pentaho.com/display/DATAMINING/LibLINEAR][LibLINEAR Weka Plugin]]
+- [[http://weka.sourceforge.net/doc.dev/][WEKA API]]
