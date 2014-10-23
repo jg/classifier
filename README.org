@@ -1,3 +1,28 @@
 * useful links
+- [[https://github.com/bwaldvogel/liblinear-weka/blob/1.8.0/src/main/java/weka/classifiers/functions/LibLINEAR.java][LibLINEAR WEKA Plugin Source]]
 - [[http://wiki.pentaho.com/display/DATAMINING/LibLINEAR][LibLINEAR Weka Plugin]]
 - [[http://weka.sourceforge.net/doc.dev/][WEKA API]]
+- [[https://github.com/bwaldvogel/liblinear-weka][LibLINEAR WEKA Wrapper github]]
+- [[https://github.com/bwaldvogel/liblinear-java][LibLINEAR-java github]]
+* inspiration for writing the Evaluator
+- [[http://courses.washington.edu/ling572/papers/joachims1997.pdf][Joachims 1997]]
+- 
+* reuters 21578
+Reuters-21578 collection Apte' split (available at http://kdd.ics.uci.edu/databases/reuters21578/reuters21578.html). It includes 12,902 documents for 90 classes, with a fixed splitting between test and training data (3,299 vs. 9,603). This is the most used version as also confirmed by the Table VI at page 38 in [Sebastiani, 2002]. To obtain from it the Reuters 10 categories Apte' split it is enough to select the 10 top-sized categories, i.e. Earn, Acquisition, Money-fx, Grain, Crude, Trade, Interest, Ship, Wheat and Corn.
+Download Here
+-         90 categories: according to literature, e.g. [Joachims, 1997], they are the categories with at least 1 training and 1 test documents. After the category selection the exact number of training documents decreases to 9,598.
+-         115 categories: according to literature, e.g. [Sebastiani, 2002], they are the categories with at least 1 training documents.
+** papers usingi t, dataset info
+- [[http://courses.washington.edu/ling572/papers/joachims1997.pdf][Joachims 1997]]
+- [[http://www.cs.cornell.edu/people/tj/publications/joachims_98a.pdf][Joachims 1998]]
+- http://nlp.stanford.edu/IR-book/html/htmledition/evaluation-of-text-classification-1.html
+
+* other datasets
+- http://kdd.ics.uci.edu/summary.data.alphabetical.html
+- [[http://www.cs.waikato.ac.nz/ml/weka/datasets.html][WEKA Site Datasets]]
+* precision/recall calculator (java)
+http://mark.goadrich.com/programs/AUC/
+* scratchpad
+import msc.classifier.Scratch._
+run
+val instances = loadReutersFile("reutersAcqModApteTest-FullVocab.arff")
