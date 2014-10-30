@@ -1,137 +1,64 @@
 package msc
-package classifier
 
 import weka.core._
-import weka.core.converters._
 import weka.classifiers.trees._
 import weka.filters._
 import weka.filters.unsupervised.attribute._
-import java.io._
-import weka.classifiers.functions.LibLINEAR
-import weka.classifiers.Evaluation
 import java.util.Random
-import weka.core.converters.ConverterUtils.DataSource
+import weka.classifiers.bayes.NaiveBayes
+import weka.classifiers.meta.ThresholdSelector
+
+import msc.Dataset._
+import LibLinear.ThresholdOption
 
 object Scratch {
-  type TrainingSet = Instances
-  type TestSet = Instances
-  type DatasetCallback[A] = (TrainingSet, TestSet) => A
-  val reutersDatasetPath = "datasets/reuters21578-modApte/"
+  /*
+  def processCategory(category: String) = {
+    val train = Reuters.trainingSetForCategory(category)
+    val test = Reuters.testSetForCategory(category)
 
-  def loadData(): Instances = {
-    val loader: TextDirectoryLoader = new TextDirectoryLoader()
-    loader.setDirectory(new File("datasets/guardian.co.uk/"))
-    val dataRaw: Instances = loader.getDataSet()
-    val filter: StringToWordVector = new StringToWordVector()
-    filter.setInputFormat(dataRaw)
-    Filter.useFilter(dataRaw, filter)
+    val c = 1
+    println(s"Category: $category")
+    val data = train
+    val classifier = LibLinear.forTrainingSet(data, c)
+    val evaluation = new weka.classifiers.Evaluation(data)
+    evaluation.crossValidateModel(classifier, data, 10, new Random(1));
+
+    println("Generating ROC Curve...")
+    Evaluation.
+      saveROCCurveToFile(evaluation, s"results/precision_vs_recall/$category.jpg")
+
+    Evaluation.printEvaluationMeasures(evaluation)
   }
+  */
 
-  // Reads in reuters21578-modApte dataset
-  def withReutersData[A](trainFileName: String, testFileName: String)
-                        (f: DatasetCallback[A]): Unit = {
-    
-    val train = loadReutersFile(trainFileName)
-    val test = loadReutersFile(testFileName)
-    f(train, test)
-    // val fileList = new File(datasetPath).listFiles().filter { (file: File) =>
-    //   file.getName.matches(".*.arff")
-    // }
+  def processCategory(category: String) = {
+    val data = Reuters.dataSetForCategory(category)
+    Evaluation.runCV(data, 10) { (train, test, fold) =>
+      {
+        // build classifier
+        val threshold = 1.0/fold
+        val opts = Map("classificationThreshold" -> ThresholdOption(threshold))
+        val classifier = LibLinear.forTrainingSet(train, opts)
+        val evaluation = new weka.classifiers.Evaluation(test)
 
-    // for (file <- fileList) {
-    //    new DataSource(fileName).getDataSet()
-    //   source.getDataSet()
-    // }
-  }
+        evaluation.evaluateModel(classifier, test)
 
-  def loadReutersFile(fileName: String): Instances = {
-    val instances =
-      new DataSource(reutersDatasetPath + fileName).getDataSet()
-    instances.setClassIndex(0)
-
-    instances
-  }
-
-  def randomizeData(data: Instances): Instances = {
-    val rand: Random = new Random(231)   // create seeded number generator
-    val randData = new Instances(data)   // create copy of original data
-    randData.randomize(rand)             // randomize data with number generator
-    randData
-  }
-
-  def runCV[A](data: Instances, folds: Integer)
-           (f: DatasetCallback[A]): List[A] = {
-    val randData = randomizeData(data)
-
-    val lst = for ( n <- 0 until folds ) yield {
-      val train: Instances = randData.trainCV(folds, n)
-      val test: Instances = randData.testCV(folds, n)
-
-      f(train, test)
+        // output info about model
+        val precision = evaluation.precision(0)
+        val recall = evaluation.recall(0)
+        println(s"threshold = $threshold; precision, recall = $precision, $recall")
+      }
     }
-
-    lst.toList
   }
 
   def run() = {
-    // val data = loadData()
-
-    // val lst = runCV(data, 2){ (train, test) => {
-    //                            val evaluation = new Evaluation(data)
-    //                            val classifier: LibLINEAR = new LibLINEAR()
-    //                            classifier.buildClassifier(train)
-    //                            evaluation.evaluateModel(classifier, test)
-    //                            println(evaluation.toSummaryString())
-    //                          }
-
-    // Instances trainInstances = ... instances got from somewhere
-    // Instances testInstances = ... instances got from somewhere
-    // Classifier scheme = ... scheme got from somewhere
-    
-    // Evaluation evaluation = new Evaluation(trainInstances);
-    // evaluation.evaluateModel(scheme, testInstances);
-    // System.out.println(evaluation.toSummaryString());
-    val data = withReutersData("reutersAcqModApteTest-FullVocab.arff",
-                               "reutersAcqModApteTrain-FullVocab.arff") {
-      (train, test) => {
-        val classifier: LibLINEAR = new LibLINEAR()
-        classifier.buildClassifier(train)
-        val evaluation = new Evaluation(train)
-        evaluation.evaluateModel(classifier, test)
-        val precision: Double = evaluation.precision(0)
-        val recall: Double = evaluation.recall(0)
-        val fMeasure: Double = evaluation.fMeasure(0)
-        val confusionMatrix: Array[Array[Double]] = evaluation.confusionMatrix()
-        println(f"Precision: $precision%2.3f")
-        println(f"Recall: $recall%2.3f")
-        println(f"F-Measure: $fMeasure%2.3f")
-
-        println()
-        println("Confusion Matrix: ")
-        println(f"${confusionMatrix(0)(0)}%4.0f ${confusionMatrix(0)(1)}%4.0f")
-        println(f"${confusionMatrix(1)(0)}%4.0f ${confusionMatrix(1)(1)}%4.0f")
-      }
-    }
-
-    // val lst = runCV(data, 2){ (train, test) => {
-    //                            val evaluation = new Evaluation(data)
-    //                            val classifier: LibLINEAR = new LibLINEAR()
-    //                            classifier.buildClassifier(train)
-    //                            evaluation.evaluateModel(classifier, test)
-    //                            println(evaluation.toSummaryString())
-    //                          }
+    val lst1 = List("Reserves", "Potato", "Ship", "Soy-oil")
+    // val lst2 = List("Cpi", "Reserves")
+    // for (category <- lst1) {
+    //  processCategory(category)
     // }
   }
-  // System.out.println(evaluation.toSummaryString());
-
-  // System.out.println();
-  // System.out.println("=== Setup run " + (i+1) + " ===");
-  // System.out.println("Classifier: " + classifier.getClass().getName() + " " + Utils.joinOptions(classifier.getOptions()));
-  // System.out.println("Dataset: " + data.relationName());
-  // System.out.println("Folds: " + folds);
-  // System.out.println("Seed: " + seed);
-  // System.out.println();
-  // System.out.println(eval.toSummaryString("=== " + folds + "-fold Cross-validation run " + (i+1) + "===", false));
 
 }
 
