@@ -1,9 +1,11 @@
 * useful links
 - [[https://github.com/bwaldvogel/liblinear-weka/blob/1.8.0/src/main/java/weka/classifiers/functions/LibLINEAR.java][LibLINEAR WEKA Plugin Source]]
 - [[http://wiki.pentaho.com/display/DATAMINING/LibLINEAR][LibLINEAR Weka Plugin]]
-- [[http://weka.sourceforge.net/doc.dev/][WEKA API]]
+- [[http://weka.sourceforge.net/doc.stable/][WEKA API]]
 - [[https://github.com/bwaldvogel/liblinear-weka][LibLINEAR WEKA Wrapper github]]
 - [[https://github.com/bwaldvogel/liblinear-java][LibLINEAR-java github]]
+- [[http://www.csie.ntu.edu.tw/~cjlin/libsvm/faq.html#f506][LibSVM FAQ]]
+- [[http://forums.pentaho.com/][WEKA Forums]]
 * inspiration for writing the Evaluator
 - [[http://courses.washington.edu/ling572/papers/joachims1997.pdf][Joachims 1997]]
 - 
@@ -22,7 +24,96 @@ Download Here
 - [[http://www.cs.waikato.ac.nz/ml/weka/datasets.html][WEKA Site Datasets]]
 * precision/recall calculator (java)
 http://mark.goadrich.com/programs/AUC/
+* generating a precision/recall curve
+import java.awt.*;
+import java.io.*;
+import java.util.*;
+import javax.swing.*;
+import weka.core.*;
+import weka.classifiers.*;
+import weka.classifiers.bayes.NaiveBayes;
+import weka.classifiers.evaluation.Evaluation;
+import weka.classifiers.evaluation.ThresholdCurve;
+import weka.gui.visualize.*;
+ 
+/**
+ * Generates and saves a precision-recall curve. Uses a cross-validation
+ * with NaiveBayes to make the curve.
+ *
+ * @author FracPete
+ * @author Eibe Frank
+ */
+public class SavePrecisionRecallCurve {
+ 
+  /**
+   * takes two arguments: dataset in ARFF format (expects class to
+   * be last attribute) and name of file with output
+   */
+  public static void main(String[] args) throws Exception {
+ 
+    // load data
+    Instances data = new Instances(new BufferedReader(new FileReader(args[0])));
+    data.setClassIndex(data.numAttributes() - 1);
+ 
+    // train classifier
+    Classifier cl = new NaiveBayes();
+    Evaluation eval = new Evaluation(data);
+    eval.crossValidateModel(cl, data, 10, new Random(1));
+ 
+    // generate curve
+    ThresholdCurve tc = new ThresholdCurve();
+    int classIndex = 0;
+    Instances result = tc.getCurve(eval.predictions(), classIndex);
+ 
+    // plot curve
+    ThresholdVisualizePanel vmc = new ThresholdVisualizePanel();
+    PlotData2D tempd = new PlotData2D(result);
+ 
+    // specify which points are connected
+    boolean[] cp = new boolean[result.numInstances()];
+    for (int n = 1; n < cp.length; n++)
+      cp[n] = true;
+    tempd.setConnectPoints(cp);
+    // add plot
+    vmc.addPlot(tempd);
+ 
+    // We want a precision-recall curve
+    vmc.setXIndex(result.attribute("Recall").index());
+    vmc.setYIndex(result.attribute("Precision").index());
+ 
+    // Make window with plot but don't show it
+    JFrame jf =  new JFrame();
+    jf.setSize(500,400);
+    jf.getContentPane().add(vmc);
+    jf.pack();
+ 
+    // Save to file specified as second argument (can use any of
+    // BMPWriter, JPEGWriter, PNGWriter, PostscriptWriter for different formats)
+    JComponentWriter jcw = new JPEGWriter(vmc.getPlotPanel(), new File(args[1]));
+    jcw.toOutput();
+    System.exit(1);
+  }
+}
+
+* threshold
+I received a question concerning moving the threshold of the classifier up or down, and thought that a general reply to the group would be the right idea.
+
+Key points.
+- When the threshold is being lowered, recall in general increases.
+- Mathematically speaking, when lowering the threshold recall can not decrease. It may stay the same or increase.
+- When the threshold is being raised, recall, in its turn decreases or stays the same.
+- When the threshold is being raised, precision in general increases.
+- Here 'in general' means for large samples and a large number of evaluation iterations. Unlike recall, the increase in precision is not necessarily monotonic.
+- Threrefore, when the threshold is being lowered, precision, in general, decreases.
 * scratchpad
-import msc.classifier.Scratch._
 run
-val instances = loadReutersFile("reutersAcqModApteTest-FullVocab.arff")
+import msc.classifier.Scratch._
+val instances = loadReutersFile("reutersAcqModApteTrain-FullVocab.arff")
+val classifier = classifierForTrainingSet(instances)
+
+import msc.classifier.Scratch._
+reutersTestSetForCategory("Lumber")
+reutersCategories
+
+import msc.Scratch._
+run
